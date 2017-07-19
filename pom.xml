@@ -1,0 +1,130 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>life.arganzheng.stduy.standalone</groupId>
+	<artifactId>java-standalone-template</artifactId>
+	<packaging>jar</packaging>
+	<version>1.0-SNAPSHOT</version>
+	<name>my-standalone</name>
+	<url>http://maven.apache.org</url>
+
+	<properties>
+		<target.dir>java-standalone-template</target.dir>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+	</properties>
+
+	<dependencies>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.8.1</version>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+
+	<build>
+		<!-- 不把 src/main/resources也打包到jar包中，资源文件后面单独copy到conf目录中 -->
+		<resources>
+			<resource>
+				<directory>src/main/resources</directory>
+				<excludes>
+					<exclude>**/*</exclude>
+				</excludes>
+			</resource>
+		</resources>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>2.3.2</version>
+				<configuration>
+					<encoding>${project.build.sourceEncoding}</encoding>
+					<source>1.8</source>
+					<target>1.8</target>
+				</configuration>
+			</plugin>
+			<!-- 解决资源文件的编码问题 -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-resources-plugin</artifactId>
+				<version>2.3</version>
+				<configuration>
+					<encoding>${project.build.sourceEncoding}</encoding>
+				</configuration>
+			</plugin>
+			<!-- 默认打包到${project.build.directory}目录，这里直接将其打包到lib目录。这里不指定mainClass和指定classPath，这些统一在startup启动脚本处理 -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<configuration>
+					<outputDirectory>
+						${project.build.directory}/${target.dir}/lib
+					</outputDirectory>
+				</configuration>
+			</plugin>
+			<!-- 将依赖的jar包也拷贝到lib目录 -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<version>2.5.1</version>
+				<executions>
+					<execution>
+						<id>copy-dependencies</id>
+						<phase>package</phase>
+						<goals>
+							<goal>copy-dependencies</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>
+								${project.build.directory}/${target.dir}/lib/
+							</outputDirectory>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<!-- 使用ant插件将lib, conf和 bin目录打包成一个zip包，方便发布 -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-antrun-plugin</artifactId>
+				<executions>
+					<!-- 将resources 打包到 conf 目录下 -->
+					<execution>
+						<phase>process-resources</phase>
+						<configuration>
+							<tasks>
+								<copy todir="${project.build.directory}/${target.dir}/bin">
+									<fileset dir="src/bin" />
+								</copy>
+								<copy todir="${project.build.directory}/${target.dir}/conf">
+									<fileset dir="src/main/resources" />
+								</copy>
+							</tasks>
+						</configuration>
+						<goals>
+							<goal>run</goal>
+						</goals>
+					</execution>
+					<!-- 打包成zip -->
+					<execution>
+						<id>makeZipfile</id>
+						<phase>package</phase>
+						<configuration>
+							<tasks>
+								<zip destfile="${project.build.directory}/${target.dir}.zip"
+									duplicate="preserve">
+									<zipfileset dir="${project.build.directory}/${target.dir}"
+										includes="**/*.*" />
+								</zip>
+							</tasks>
+						</configuration>
+						<goals>
+							<goal>run</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+	
+</project>
